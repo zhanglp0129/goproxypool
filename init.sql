@@ -10,8 +10,8 @@ create table proxy_address (
     port integer not null,
     -- 协议，一般为http或socks
     protocol text not null,
-    -- 上一次检测可用性的时间
-    detect_time text,
+    -- 上一次检测可用性的时间，为纳秒级时间戳
+    detect_time integer null,
     -- 检测失败次数
     failure_number integer default 0
 );
