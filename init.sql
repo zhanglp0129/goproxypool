@@ -13,5 +13,7 @@ create table proxy_address (
     -- 上一次检测可用性的时间，为纳秒级时间戳
     detect_time integer null,
     -- 检测失败次数
-    failure_number integer default 0
+    failure_number integer default 0,
+    -- 禁止重复ip 端口 协议
+    unique(ip, port, protocol)
 );
