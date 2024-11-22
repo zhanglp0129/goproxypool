@@ -3,15 +3,15 @@
 -- 代理地址表
 create table proxy_address (
     -- 主键
-    id bigint primary key autoincrement,
+    id integer primary key autoincrement,
     -- ip地址，可以是ipv4和ipv6
-    ip varchar(45) not null,
+    ip text not null,
     -- 端口
-    port smallint not null,
+    port integer not null,
     -- 协议，一般为http或socks
-    protocol varchar(20) not null,
+    protocol text not null,
     -- 上一次检测可用性的时间
-    detect_time datetime,
+    detect_time text,
     -- 检测失败次数
-    failure_number int default 0
+    failure_number integer default 0
 );
