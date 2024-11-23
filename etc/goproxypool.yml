@@ -1,0 +1,53 @@
+# 代理相关配置
+proxy:
+  # http代理相关配置
+  http:
+    # 代理服务器绑定ip
+    ip: 0.0.0.0
+    # 代理服务器监听端口
+    port: 12716
+    # 无可用ip时执行的策略。error表示返回异常，direct表示直连
+    no-ip: error
+
+# 管理面板相关配置
+panel:
+  # 管理面板绑定ip
+  ip: 0.0.0.0
+  # 管理面板监听关口
+  port: 22716
+  # 管理面板登录用户名
+  username: admin
+  # 管理面板登录密码
+  password: 123456
+
+# 可用性检测相关配置
+detect:
+  # 每次检测的代理地址个数
+  number: 20
+  # 多久检测一次，单位为秒
+  interval: 10
+  # 检测结果生效时间，单位为秒
+  # 代理地址的检测结果在生效时间内，无需再次检测即可使用；超出生效时间则需重新检测
+  effective-seconds: 1800
+  # 检测可用性使用的网站。尽量填写国内外都能访问的大型网站
+  websites:
+    - https://www.baidu.com
+    - https://www.douyin.com
+    - https://www.aliyun.com
+  # 直连检测间隔，单位为秒。用于检测当前网络环境是否通畅，防止断网后导致检测结果出错
+  direct-interval: 60
+
+# 持久化存储相关配置
+storage:
+  # 持久化存储类型，仅支持sqlite
+  type: sqlite
+  # 数据源名称
+  # 对于sqlite，填数据库文件路径即可
+  dsn: ./goproxypool.db
+
+# 日志相关配置
+log:
+  # 日志级别。可用的日志级别：debug, info, warn, error, none
+  level: warn
+  # 日志保存的文件
+  file: logs/goproxypool.log
