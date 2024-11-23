@@ -15,7 +15,7 @@ create table if not exists proxy_addresses (
     -- 检测失败次数
     failure_number integer default 0,
     -- 上次使用的时间，为纳秒级时间戳
-    used_time integer default 0,
+    use_time integer default 0,
     -- 禁止重复ip 端口 协议
     unique(ip, port, protocol)
 );
@@ -24,4 +24,4 @@ create table if not exists proxy_addresses (
 create index if not exists idx_detect_time on proxy_addresses(detect_time);
 
 -- 为使用时间创建索引
-create index if not exists idx_used_time on proxy_addresses(used_time);
+create index if not exists idx_used_time on proxy_addresses(use_time);
