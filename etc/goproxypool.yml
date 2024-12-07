@@ -15,10 +15,6 @@ panel:
   ip: 0.0.0.0
   # 管理面板监听关口
   port: 22716
-  # 管理面板登录用户名
-  username: admin
-  # 管理面板登录密码
-  password: 123456
 
 # 可用性检测相关配置
 detect:
