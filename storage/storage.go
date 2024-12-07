@@ -1,7 +1,35 @@
 package storage
 
-// Storage 代理地址持久化存储的接口
-type Storage interface {
+import (
+	"github.com/zhanglp0129/goproxypool/config"
+	"github.com/zhanglp0129/goproxypool/storage/sqlite"
+)
+
+var (
+	Storage IStorage
+	CFG     = config.CFG
+)
+
+const (
+	Sqlite = "sqlite"
+)
+
+// 初始化持久化存储实例
+func init() {
+	// 获取持久化存储相关配置
+	typ, dsn := CFG.Storage.Type, CFG.Storage.DSN
+	var err error
+	switch typ {
+	case Sqlite:
+		Storage, err = sqlite.NewSqlite(dsn)
+		panic(err)
+	default:
+		panic("持久化类型不合法")
+	}
+}
+
+// IStorage 代理地址持久化存储的接口
+type IStorage interface {
 	// InsertProxyAddress 插入一个代理地址。ID应当为0，由系统自动生成
 	InsertProxyAddress(proxyAddress ProxyAddress) error
 
