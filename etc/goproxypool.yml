@@ -6,8 +6,8 @@ proxy:
     ip: 0.0.0.0
     # 代理服务器监听端口
     port: 12716
-    # 无可用ip时执行的策略。error表示返回异常，direct表示直连
-    no-ip: error
+    # 无可用代理时执行的策略。error表示返回异常，direct表示直连
+    no_proxy: error
 
 # 管理面板相关配置
 panel:
@@ -24,16 +24,16 @@ detect:
   interval: 10
   # 检测结果生效时间，单位为秒
   # 代理地址的检测结果在生效时间内，无需再次检测即可使用；超出生效时间则需重新检测
-  effective-seconds: 1800
+  effective_seconds: 1800
   # 删除代理地址的阈值。连续多少次未通过检测，删除该代理地址
-  delete-threshold: 5
+  delete_threshold: 5
   # 检测可用性使用的网站。尽量填写国内外都能访问的大型网站
   websites:
     - https://www.baidu.com
     - https://www.douyin.com
     - https://www.aliyun.com
   # 直连检测间隔，单位为秒。用于检测当前网络环境是否通畅，防止断网后导致检测结果出错
-  direct-interval: 60
+  direct_interval: 60
 
 # 持久化存储相关配置
 storage:
