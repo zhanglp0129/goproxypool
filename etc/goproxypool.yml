@@ -19,21 +19,45 @@ panel:
 # 可用性检测相关配置
 detect:
   # 每次检测的代理地址个数
-  number: 20
+  number: 50
   # 多久检测一次，单位为秒
   interval: 10
+  # 检测的超时时间，单位为秒
+  timeout: 3
   # 检测结果生效时间，单位为秒
   # 代理地址的检测结果在生效时间内，无需再次检测即可使用；超出生效时间则需重新检测
-  effective_seconds: 1800
-  # 删除代理地址的阈值。连续多少次未通过检测，删除该代理地址
-  delete_threshold: 5
+  effective_seconds: 600
+  # 检测结果生效时间倍率，可以填小数。检测完成后，下一次检测的生效时间会乘以倍率
+  effective_rate: 1.5
+  # 最大倍率，可以填小数
+  max_rate: 150
+  # 尝试次数。失败后会重试
+  attempts: 3
   # 检测可用性使用的网站。尽量填写国内外都能访问的大型网站
   websites:
     - https://www.baidu.com
     - https://www.douyin.com
     - https://www.aliyun.com
-  # 直连检测间隔，单位为秒。用于检测当前网络环境是否通畅，防止断网后导致检测结果出错
+    - https://www.taobao.com
+    - https://www.bing.com
+    - https://www.qq.com
+    - https://www.sohu.com
+    - https://www.sina.com.cn
+    - https://www.zhihu.com
+    - https://www.163.com
+  # 直连检测间隔，单位为秒。用于检测当前网络环境是否通畅
   direct_interval: 60
+
+# 使用代理地址相关配置
+use:
+  # 当使用代理地址后，是否将其作为一次检测
+  detect: true
+  # 使用代理地址超时时间，单位为秒
+  timeout: 3
+  # 使用代理地址的重试次数。失败会使用相同地址重试
+  attempts: 3
+  # 每次使用代理地址的数量。相同地址重试失败后，会更换地址
+  addresses: 3
 
 # 持久化存储相关配置
 storage:
@@ -46,6 +70,6 @@ storage:
 # 日志相关配置
 log:
   # 日志级别。可用的日志级别：debug, info, warn, error, none
-  level: warn
+  level: info
   # 日志保存的文件
   file: logs/goproxypool.log

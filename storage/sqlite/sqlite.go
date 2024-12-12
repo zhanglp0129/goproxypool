@@ -1,49 +1,30 @@
 package sqlite
 
 import (
-	"github.com/zhanglp0129/goproxypool/storage"
+	"github.com/zhanglp0129/goproxypool/config"
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
 )
 
-// NewSqlite 创建一个sqlite持久化存储实例
-func NewSqlite(dsn string) (*Storage, error) {
-	return &Storage{}, nil
-}
+var CFG = config.CFG
 
-// Storage sqlite持久化存储
-type Storage struct {
-}
+// InitSqlite 初始化sqlite
+func InitSqlite() (*Storage, error) {
+	// 获取相关配置
+	dsn := CFG.Storage.DSN
+	// 连接数据库
+	db, err := gorm.Open(sqlite.Open(dsn))
+	if err != nil {
+		return nil, err
+	}
 
-func (s Storage) InsertProxyAddress(proxyAddress storage.ProxyAddress) error {
-	//TODO implement me
-	panic("implement me")
-}
+	// 数据库字段迁移
+	err = db.AutoMigrate(&StorageModel{})
+	if err != nil {
+		return nil, err
+	}
 
-func (s Storage) GetAvailableProxyAddress(protocol string) (storage.ProxyAddress, error) {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (s Storage) GetDetectedProxyAddresses(limit int) ([]storage.ProxyAddress, error) {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (s Storage) PageProxyAddresses(pageNum, pageSize int) (int, []storage.ProxyAddress, error) {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (s Storage) UpdateProxyAddress(proxyAddress storage.ProxyAddress) error {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (s Storage) DeleteProxyAddress(id int) error {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (s Storage) FinishDetection(id int, accept bool) error {
-	//TODO implement me
-	panic("implement me")
+	return &Storage{
+		db,
+	}, nil
 }

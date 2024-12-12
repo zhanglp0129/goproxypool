@@ -1,18 +1,23 @@
 package config
 
 import (
+	"flag"
 	"gopkg.in/yaml.v3"
 	"os"
 )
 
-const configFilename = "etc/goproxypool.yml"
+// 默认配置文件路径
+const defaultConfigFilename = "etc/goproxypool.yml"
 
 var CFG *Config
 
 // 初始化配置文件
 func init() {
+	// 获取配置文件路径
+	flag.Parse()
+	configFilename := flag.String("c", defaultConfigFilename, "配置文件路径")
 	// 读取配置文件内容
-	content, err := os.ReadFile(configFilename)
+	content, err := os.ReadFile(*configFilename)
 	if err != nil {
 		panic(err)
 	}
@@ -26,6 +31,7 @@ type Config struct {
 	Proxy   ProxyConfig
 	Panel   PanelConfig
 	Detect  DetectConfig
+	Use     UseConfig
 	Storage StorageConfig
 	Log     LogConfig
 }
@@ -52,10 +58,21 @@ type PanelConfig struct {
 type DetectConfig struct {
 	Number           int
 	Interval         int
-	EffectiveSeconds int `yaml:"effective_seconds"`
-	DeleteThreshold  int `yaml:"delete_threshold"`
+	Timeout          int
+	EffectiveSeconds int     `yaml:"effective_seconds"`
+	EffectiveRate    float64 `yaml:"effective_rate"`
+	MaxRate          float64 `yaml:"max_rate"`
+	Attempts         int
 	Websites         []string
 	DirectInterval   int `yaml:"direct_interval"`
+}
+
+// UseConfig 使用代理地址相关配置
+type UseConfig struct {
+	Detect    bool
+	Timeout   int
+	Attempts  int
+	Addresses int
 }
 
 // StorageConfig 持久化存储相关配置
