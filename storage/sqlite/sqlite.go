@@ -1,12 +1,19 @@
 package sqlite
 
 import (
+	"errors"
+	"github.com/zhanglp0129/goproxypool/common/constant"
+	"github.com/zhanglp0129/goproxypool/common/pojo"
 	"github.com/zhanglp0129/goproxypool/config"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
+	"sync"
+	"time"
 )
 
-var CFG = config.CFG
+var (
+	CFG = config.CFG
+)
 
 // InitSqlite 初始化sqlite
 func InitSqlite() (*Storage, error) {
@@ -25,6 +32,126 @@ func InitSqlite() (*Storage, error) {
 	}
 
 	return &Storage{
-		db,
+		db: db,
 	}, nil
+}
+
+// Storage 持久化存储结构体
+type Storage struct {
+	db *gorm.DB
+	// 每个代理地址的并发数，key: id, value: 并发数
+	concurrency sync.Map
+	// 代理地址是否正在检测，key：id, value: 是否正在检测
+	detecting sync.Map
+}
+
+func (s *Storage) InsertProxyAddress(proxyAddress pojo.ProxyAddress) error {
+	// 自定义SQL：如果代理地址已存在，则更新其他数据；不存在则插入
+	sql := `insert into storage(protocol, ip, port) values (?, ?, ?) 
+            on conflict(protocol, ip, port) do
+            	update set accept_number=0, effective_time=0, use_time=0`
+	return s.db.Raw(sql, proxyAddress.Protocol, proxyAddress.IP, proxyAddress.Port).Error
+}
+
+func (s *Storage) GetAvailableProxyAddress(protocol string) (pojo.ProxyAddress, error) {
+	maxConcurrency := CFG.Use.MaxConcurrency
+	// 获取一个可用的代理地址。未超过检测生效时间，优先选择最久未使用的代理地址。
+	model := StorageModel{}
+	err := s.db.Where("protocol = ? and effective_time > ?", protocol, time.Now().UnixNano()).
+		Order("use_time").
+		Limit(1).Take(&model).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		// 无代理地址
+		return pojo.ProxyAddress{}, constant.NoProxy
+	} else if err != nil {
+		// 其他错误
+		return pojo.ProxyAddress{}, err
+	}
+
+	// 加乐观锁，最多重试3次
+	var swapped bool
+	for i := 0; i < 3; i++ {
+		// 超过最大并发，也认为是无可用的代理地址
+		concurrent, _ := s.concurrency.LoadOrStore(model.ID, 1)
+		if concurrent.(int) > maxConcurrency {
+			return pojo.ProxyAddress{}, constant.NoProxy
+		}
+		// 获取完成后，并发数+1
+		swapped = s.concurrency.CompareAndSwap(model.ID, concurrent, concurrent.(int)+1)
+		if swapped {
+			break
+		}
+	}
+	if !swapped {
+		// 多次尝试乐观锁判断都失效
+		return pojo.ProxyAddress{}, constant.NoProxy
+	}
+
+	// 构造并返回结果
+	return pojo.ProxyAddress{
+		ID:       model.ID,
+		IP:       model.IP,
+		Port:     model.Port,
+		Protocol: model.Protocol,
+	}, nil
+}
+
+func (s *Storage) GetDetectedProxyAddresses() ([]pojo.ProxyAddress, error) {
+	// 获取多个待检测代理地址。超过检测生效时间，优先获取最久未检测的代理地址
+	limit := CFG.Detect.Number
+	var models []StorageModel
+	err := s.db.Where("effective_time < ?", time.Now().UnixNano()).
+		Order("effective_time").Limit(limit).Find(&models).Error
+	if err != nil {
+		return nil, err
+	}
+	// 判断是否正在检测，如果正在检测就删除，用滑动窗口算法优化删除。同时将状态改为正在检测
+	var slow int
+	for fast := 0; fast < len(models); fast++ {
+		model := models[fast]
+		s.detecting.LoadOrStore(model.ID, false)
+		if s.detecting.CompareAndSwap(model.ID, false, true) {
+			// 当前代理地址不在检测中
+			models[slow] = models[fast]
+			slow++
+		}
+	}
+	models = models[:slow]
+
+	// 构造返回结果
+	addresses := make([]pojo.ProxyAddress, 0, len(models))
+	for _, model := range models {
+		addresses = append(addresses, pojo.ProxyAddress{
+			ID:       model.ID,
+			IP:       model.IP,
+			Port:     model.Port,
+			Protocol: model.Protocol,
+		})
+	}
+	return addresses, nil
+}
+
+func (s *Storage) PageProxyAddresses(pageNum, pageSize int) (pojo.ProxyAddressPageVO, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (s *Storage) UpdateProxyAddress(proxyAddress pojo.ProxyAddress) error {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (s *Storage) DeleteProxyAddress(id int) error {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (s *Storage) FinishDetection(id int, accept bool) error {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (s *Storage) FinishUse(id int, success bool) error {
+	//TODO implement me
+	panic("implement me")
 }

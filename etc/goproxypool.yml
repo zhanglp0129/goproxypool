@@ -58,6 +58,10 @@ use:
   attempts: 3
   # 每次使用代理地址的数量。相同地址重试失败后，会更换地址
   addresses: 3
+  # 同一个ip地址最大并发
+  max_concurrency: 20
+  # 无代理地址等待时间，单位为秒
+  no_proxy_waiting: 1
 
 # 持久化存储相关配置
 storage:

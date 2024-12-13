@@ -69,10 +69,12 @@ type DetectConfig struct {
 
 // UseConfig 使用代理地址相关配置
 type UseConfig struct {
-	Detect    bool
-	Timeout   int
-	Attempts  int
-	Addresses int
+	Detect         bool
+	Timeout        int
+	Attempts       int
+	Addresses      int
+	MaxConcurrency int `yaml:"max_concurrency"`
+	NOProxyWaiting int `yaml:"no_proxy_waiting"`
 }
 
 // StorageConfig 持久化存储相关配置

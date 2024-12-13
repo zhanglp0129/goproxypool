@@ -1,8 +1,8 @@
 package storage
 
 import (
+	"github.com/zhanglp0129/goproxypool/common/pojo"
 	"github.com/zhanglp0129/goproxypool/config"
-	"github.com/zhanglp0129/goproxypool/constant"
 	"github.com/zhanglp0129/goproxypool/storage/sqlite"
 )
 
@@ -35,19 +35,19 @@ func init() {
 type IStorage interface {
 	// InsertProxyAddress 插入一个代理地址
 	// proxyAddress.ID无需指定，由系统自动生成。如果该代理地址已存在，则刷新
-	InsertProxyAddress(proxyAddress ProxyAddress) error
+	InsertProxyAddress(proxyAddress pojo.ProxyAddress) error
 
 	// GetAvailableProxyAddress 获取一个可用的代理地址，会提供负载均衡的功能
-	GetAvailableProxyAddress(protocol string) (ProxyAddress, error)
+	GetAvailableProxyAddress(protocol string) (pojo.ProxyAddress, error)
 
 	// GetDetectedProxyAddresses 获取待检测的代理地址
-	GetDetectedProxyAddresses() ([]ProxyAddress, error)
+	GetDetectedProxyAddresses() ([]pojo.ProxyAddress, error)
 
 	// PageProxyAddresses 分页查询代理地址
-	PageProxyAddresses(pageNum, pageSize int) (ProxyAddressPageVO, error)
+	PageProxyAddresses(pageNum, pageSize int) (pojo.ProxyAddressPageVO, error)
 
 	// UpdateProxyAddress 修改代理地址
-	UpdateProxyAddress(proxyAddress ProxyAddress) error
+	UpdateProxyAddress(proxyAddress pojo.ProxyAddress) error
 
 	// DeleteProxyAddress 删除代理地址
 	DeleteProxyAddress(id int) error
@@ -59,32 +59,4 @@ type IStorage interface {
 	// FinishUse 完成代理地址的使用
 	// success为是否使用成功
 	FinishUse(id int, success bool) error
-}
-
-// ProxyAddress 代理地址
-type ProxyAddress struct {
-	ID       int64
-	IP       string
-	Port     uint16
-	Protocol string
-}
-
-// ProxyAddressPageVO 代理地址分页查询结果
-type ProxyAddressPageVO struct {
-	// 合计
-	Total int `json:"total"`
-	// 待检测数量
-	Pends int `json:"pends"`
-	// 通过检测数量
-	Accepts int `json:"accepts"`
-	// 未通过检测数量
-	Fails int `json:"Fails"`
-	// 结果列表
-	Items []struct {
-		ID       int                         `json:"id"`
-		IP       string                      `json:"ip"`
-		Port     uint16                      `json:"port"`
-		Protocol string                      `json:"protocol"`
-		Status   constant.ProxyAddressStatus `json:"status"`
-	} `json:"items"`
 }
