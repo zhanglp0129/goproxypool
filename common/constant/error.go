@@ -10,4 +10,6 @@ func (e GoproxypoolError) Error() string {
 const (
 	// NoProxy 无代理地址异常
 	NoProxy GoproxypoolError = "no proxy address error"
+	// UseProxyError 使用代理地址失败
+	UseProxyError GoproxypoolError = "use proxy address error"
 )

@@ -69,7 +69,8 @@ type DetectConfig struct {
 
 // UseConfig 使用代理地址相关配置
 type UseConfig struct {
-	Detect         bool
+	SuccessDetect  bool `yaml:"success_detect"`
+	FailDetect     bool `yaml:"fail_detect"`
 	Timeout        int
 	Attempts       int
 	Addresses      int
