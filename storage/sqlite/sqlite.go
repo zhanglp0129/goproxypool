@@ -144,8 +144,7 @@ func (s *Storage) UpdateProxyAddress(proxyAddress pojo.ProxyAddress) error {
 }
 
 func (s *Storage) DeleteProxyAddress(id int) error {
-	//TODO implement me
-	panic("implement me")
+	return s.db.Where("id = ?", id).Delete(&StorageModel{}).Error
 }
 
 func (s *Storage) FinishDetection(id int64, accept bool) error {
