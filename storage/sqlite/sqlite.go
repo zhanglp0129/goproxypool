@@ -7,6 +7,7 @@ import (
 	"github.com/zhanglp0129/goproxypool/config"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
+	"math"
 	"sync"
 	"time"
 )
@@ -57,9 +58,9 @@ func (s *Storage) GetAvailableProxyAddress(protocol string) (pojo.ProxyAddress, 
 	maxConcurrency := CFG.Use.MaxConcurrency
 	// 获取一个可用的代理地址。未超过检测生效时间，优先选择最久未使用的代理地址。
 	model := StorageModel{}
-	err := s.db.Where("protocol = ? and effective_time > ?", protocol, time.Now().UnixNano()).
+	err := s.db.Where("protocol = ? and effective_time > ? and accept_number > 0", protocol, time.Now().UnixNano()).
 		Order("use_time").
-		Limit(1).Take(&model).Error
+		Take(&model).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		// 无代理地址
 		return pojo.ProxyAddress{}, constant.NoProxy
@@ -146,12 +147,52 @@ func (s *Storage) DeleteProxyAddress(id int) error {
 	panic("implement me")
 }
 
-func (s *Storage) FinishDetection(id int, accept bool) error {
-	//TODO implement me
-	panic("implement me")
+func (s *Storage) FinishDetection(id int64, accept bool) error {
+	// 完成代理地址的检测
+	// 先获取数据，要求代理地址失效
+	var model StorageModel
+	err := s.db.Select("id", "accept_number", "effective_time").
+		Where("id = ? and effective_time < ?", id, time.Now().UnixNano()).
+		Take(&model).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil
+	} else if err != nil {
+		return err
+	}
+	// 修改数据库中通过次数和检测生效时间
+	if accept {
+		// 通过检测
+		if model.AcceptNumber > 0 {
+			model.AcceptNumber++
+		} else {
+			model.AcceptNumber = 1
+		}
+	} else {
+		// 未通过检测
+		if model.AcceptNumber < 0 {
+			model.AcceptNumber++
+		} else {
+			model.AcceptNumber = -1
+		}
+	}
+	oldEffectiveTime := model.EffectiveTime
+	rate := min(CFG.Detect.MaxRate, math.Pow(CFG.Detect.EffectiveRate, math.Abs(float64(model.AcceptNumber))))
+	effective := time.Duration(float64(CFG.Detect.EffectiveSeconds)*rate) * time.Second
+	model.EffectiveTime = time.Now().UnixNano() + int64(effective)
+	// 修改数据，通过代理地址的生效时间加乐观锁
+	err = s.db.Select("accept_number", "effective_time").
+		Where("id = ? and effective_time = ?", id, oldEffectiveTime).
+		Updates(&model).Error
+	if err != nil {
+		return err
+	}
+
+	// 将正在检测改为false
+	s.detecting.Store(id, false)
+	return nil
 }
 
-func (s *Storage) FinishUse(id int, success bool) error {
+func (s *Storage) FinishUse(id int64, success bool) error {
 	//TODO implement me
 	panic("implement me")
 }

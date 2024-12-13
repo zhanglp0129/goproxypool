@@ -52,11 +52,11 @@ type IStorage interface {
 	// DeleteProxyAddress 删除代理地址
 	DeleteProxyAddress(id int) error
 
-	// FinishDetection 代理地址检测完成，如果检测失败次数超过阈值，会删除该代理地址
+	// FinishDetection 代理地址检测完成
 	// accept为是否通过检测
-	FinishDetection(id int, accept bool) error
+	FinishDetection(id int64, accept bool) error
 
 	// FinishUse 完成代理地址的使用
 	// success为是否使用成功
-	FinishUse(id int, success bool) error
+	FinishUse(id int64, success bool) error
 }
