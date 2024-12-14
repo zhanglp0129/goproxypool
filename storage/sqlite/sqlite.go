@@ -322,6 +322,6 @@ func (s *Storage) FinishUse(id int64, success bool) error {
 
 // 获取生效时间
 func effective[T utils.INumber](acceptNumber T) int64 {
-	rate := min(CFG.Detect.MaxRate, math.Pow(CFG.Detect.EffectiveRate, math.Abs(float64(acceptNumber))))
+	rate := min(CFG.Detect.MaxRate, math.Pow(CFG.Detect.EffectiveRate, math.Abs(float64(acceptNumber)-1)))
 	return time.Now().UnixNano() + int64(time.Duration(float64(CFG.Detect.EffectiveSeconds)*rate)*time.Second)
 }
