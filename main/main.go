@@ -7,4 +7,5 @@ import (
 
 func main() {
 	detector.Run()
+	select {}
 }
