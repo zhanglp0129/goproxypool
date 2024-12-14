@@ -134,8 +134,74 @@ func (s *Storage) GetDetectedProxyAddresses() ([]pojo.ProxyAddress, error) {
 }
 
 func (s *Storage) PageProxyAddresses(pageNum, pageSize int) (pojo.ProxyAddressPageVO, error) {
-	//TODO implement me
-	panic("implement me")
+	var vo pojo.ProxyAddressPageVO
+	err := s.db.Transaction(func(tx *gorm.DB) error {
+		// 分页查询
+		var models []StorageModel
+		offset := (pageNum - 1) * pageSize
+		err := tx.Limit(pageSize).Offset(offset).Find(&models).Error
+		if err != nil {
+			return err
+		}
+		// 构造items
+		items := make([]pojo.ProxyAddressPageItem, 0, len(models))
+		for _, model := range models {
+			// 计算状态
+			var status constant.ProxyAddressStatus
+			if time.Now().UnixNano() > model.EffectiveTime {
+				status = constant.PendingDetection
+			} else if model.AcceptNumber > 0 {
+				status = constant.AcceptDetection
+			} else {
+				status = constant.FailedDetection
+			}
+			// 插入items切片
+			items = append(items, pojo.ProxyAddressPageItem{
+				ID:       model.ID,
+				IP:       model.IP,
+				Port:     model.Port,
+				Protocol: model.Protocol,
+				Status:   status,
+			})
+		}
+
+		// 查询总计
+		totalResult := struct{ Total, Pends, Accepts, Fails int }{}
+		// 查询待检测
+		err = tx.Select("count(*) as pends").
+			Where("effective_time < ?", time.Now().UnixNano()).
+			Find(&totalResult).Error
+		if err != nil {
+			return err
+		}
+		// 查询检测通过
+		err = tx.Select("count(*) as accepts").
+			Where("effective_time > ? and accept_number > 0", time.Now().UnixNano()).
+			Find(&totalResult).Error
+		if err != nil {
+			return err
+		}
+		// 查询检测失败
+		err = tx.Select("count(*) as fails").
+			Where("effective_time > ? and accept_number <= 0", time.Now().UnixNano()).
+			Find(&totalResult).Error
+		if err != nil {
+			return err
+		}
+		// 计算总计
+		totalResult.Total = totalResult.Pends + totalResult.Accepts + totalResult.Fails
+
+		// 构建vo
+		vo = pojo.ProxyAddressPageVO{
+			Total:   totalResult.Total,
+			Pends:   totalResult.Pends,
+			Accepts: totalResult.Accepts,
+			Fails:   totalResult.Fails,
+			Items:   items,
+		}
+		return nil
+	})
+	return vo, err
 }
 
 func (s *Storage) UpdateProxyAddress(proxyAddress pojo.ProxyAddress) error {
