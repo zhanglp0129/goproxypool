@@ -14,4 +14,6 @@ const (
 	UseProxyError GoproxypoolError = "use proxy address error"
 	// IPFormatError IP地址格式错误
 	IPFormatError GoproxypoolError = "ip address format error"
+	// NoDetectWebsite 无检测代理地址使用的网站
+	NoDetectWebsite GoproxypoolError = "no detect website error"
 )

@@ -20,5 +20,6 @@ func Run() {
 // 发请求检测连通性
 func request(client http.Client, url string) error {
 	_, err := client.Get(url)
+	// TODO 记录 info 日志
 	return err
 }

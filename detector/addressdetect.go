@@ -50,12 +50,24 @@ func detect(address pojo.ProxyAddress) error {
 	// 返回的error
 	var res error
 	for i := 0; i < attempts; i++ {
+		// 获取检测代理地址使用的网站
 		var website string
-		func() {
+		err := func() error {
 			websitesMutex.RLock()
 			defer websitesMutex.RUnlock()
+			if len(availableWebsites) == 0 {
+				// TODO 记录日志
+				return constant.NoDetectWebsite
+			}
 			website = availableWebsites[rand.Intn(len(availableWebsites))]
+			return nil
 		}()
+		timeout := time.Duration(CFG.Detect.Timeout) * time.Second
+		if err != nil {
+			// 获取检测网站失败，按照超时处理
+			time.Sleep(timeout)
+			continue
+		}
 
 		// 构建代理对象
 		proxyUrl, err := buildProxyUrl(address)
@@ -68,7 +80,7 @@ func detect(address pojo.ProxyAddress) error {
 		}
 		client := http.Client{
 			Transport: transport,
-			Timeout:   time.Duration(CFG.Detect.Timeout) * time.Second,
+			Timeout:   timeout,
 		}
 		// 向网站发送代理请求
 		err = request(client, website)
