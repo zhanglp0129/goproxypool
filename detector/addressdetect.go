@@ -2,6 +2,7 @@ package detector
 
 import (
 	"errors"
+	"fmt"
 	"github.com/zhanglp0129/goproxypool/common/constant"
 	"github.com/zhanglp0129/goproxypool/common/pojo"
 	"math/rand"
@@ -24,6 +25,7 @@ func runAddressDetect() {
 		addresses, err := Storage.GetDetectedProxyAddresses()
 		if err != nil {
 			// TODO 记录日志
+			fmt.Printf("error: 获取待检测代理地址错误 %v\n", err)
 			continue
 		}
 		// 开启goroutine，执行检测
@@ -32,11 +34,15 @@ func runAddressDetect() {
 				err = detect(address)
 				if err != nil {
 					// TODO 记录 info 日志
+					fmt.Printf("info: 检测代理地址 %v 错误 %v\n", address, err)
+					return
 				}
 				// 检测完成
 				err = Storage.FinishDetection(address.ID, err == nil)
 				if err != nil {
 					// TODO 记录日志
+					fmt.Printf("error: 完成代理地址 %v 检测错误 %v\n", address, err)
+					return
 				}
 			}()
 		}
@@ -57,6 +63,7 @@ func detect(address pojo.ProxyAddress) error {
 			defer websitesMutex.RUnlock()
 			if len(availableWebsites) == 0 {
 				// TODO 记录日志
+				fmt.Printf("error: 无可用的检测网站\n")
 				return constant.NoDetectWebsite
 			}
 			website = availableWebsites[rand.Intn(len(availableWebsites))]
@@ -73,6 +80,7 @@ func detect(address pojo.ProxyAddress) error {
 		proxyUrl, err := buildProxyUrl(address)
 		if err != nil {
 			// TODO 记录日志
+			fmt.Printf("error: 构建代理对象错误，代理地址为 %v\n", address)
 			return err
 		}
 		transport := &http.Transport{
@@ -83,10 +91,12 @@ func detect(address pojo.ProxyAddress) error {
 			Timeout:   timeout,
 		}
 		// 向网站发送代理请求
-		err = request(client, website)
+		resp, err := client.Get(website)
 		if err != nil {
 			res = errors.Join(res, err)
 		} else {
+			// TODO 记录 info 日志
+			fmt.Printf("info: 使用代理 %v 访问 %s 成功，响应状态码为 %d\n", address, website, resp.StatusCode)
 			return nil
 		}
 	}
@@ -118,5 +128,6 @@ func buildProxyUrl(address pojo.ProxyAddress) (*url.URL, error) {
 	builder.WriteString(strconv.Itoa(int(address.Port)))
 	rawUrl := builder.String()
 	// TODO 打印 debug 日志
+	fmt.Printf("debug: 代理url为 %s\n", rawUrl)
 	return url.Parse(rawUrl)
 }

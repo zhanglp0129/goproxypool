@@ -2,6 +2,7 @@ package detector
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"sync"
 	"time"
@@ -28,6 +29,7 @@ func runWebsiteDetect() {
 				err := websiteDetect(website)
 				if err != nil {
 					// TODO 记录 warn 日志
+					fmt.Printf("warn: 直连检测 %s 出错 %v\n", website, err)
 				} else {
 					// 检测成功，往临时网站切片中写入当前网站
 					mtx.Lock()
@@ -59,10 +61,12 @@ func websiteDetect(website string) error {
 		client := http.Client{
 			Timeout: time.Duration(CFG.Detect.Timeout) * time.Second,
 		}
-		err := request(client, website)
+		resp, err := client.Get(website)
 		if err != nil {
 			res = errors.Join(res, err)
 		} else {
+			// TODO 记录 info 日志
+			fmt.Printf("info: 不使用代理访问 %s 成功，响应状态码为 %d\n", website, resp.StatusCode)
 			return nil
 		}
 	}
