@@ -139,8 +139,14 @@ func (s *Storage) PageProxyAddresses(pageNum, pageSize int) (pojo.ProxyAddressPa
 }
 
 func (s *Storage) UpdateProxyAddress(proxyAddress pojo.ProxyAddress) error {
-	//TODO implement me
-	panic("implement me")
+	model := StorageModel{
+		Protocol: proxyAddress.Protocol,
+		IP:       proxyAddress.IP,
+		Port:     proxyAddress.Port,
+	}
+	err := s.db.Where("id = ?", proxyAddress.ID).
+		Updates(&model).Error
+	return err
 }
 
 func (s *Storage) DeleteProxyAddress(id int) error {
