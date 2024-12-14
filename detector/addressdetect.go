@@ -2,9 +2,14 @@ package detector
 
 import (
 	"errors"
+	"github.com/zhanglp0129/goproxypool/common/constant"
 	"github.com/zhanglp0129/goproxypool/common/pojo"
 	"math/rand"
+	"net"
 	"net/http"
+	"net/url"
+	"strconv"
+	"strings"
 	"time"
 )
 
@@ -51,11 +56,22 @@ func detect(address pojo.ProxyAddress) error {
 			defer websitesMutex.RUnlock()
 			website = availableWebsites[rand.Intn(len(availableWebsites))]
 		}()
-		// 向网站发送请求，检测代理地址可用性
-		client := http.Client{
-			Timeout: time.Duration(CFG.Detect.Timeout) * time.Second,
+
+		// 构建代理对象
+		proxyUrl, err := buildProxyUrl(address)
+		if err != nil {
+			// TODO 记录日志
+			return err
 		}
-		err := request(client, website)
+		transport := &http.Transport{
+			Proxy: http.ProxyURL(proxyUrl),
+		}
+		client := http.Client{
+			Transport: transport,
+			Timeout:   time.Duration(CFG.Detect.Timeout) * time.Second,
+		}
+		// 向网站发送代理请求
+		err = request(client, website)
 		if err != nil {
 			res = errors.Join(res, err)
 		} else {
@@ -63,4 +79,32 @@ func detect(address pojo.ProxyAddress) error {
 		}
 	}
 	return res
+}
+
+// 构建代理url
+func buildProxyUrl(address pojo.ProxyAddress) (*url.URL, error) {
+	builder := strings.Builder{}
+	// 构建协议
+	builder.WriteString(address.Protocol)
+	builder.WriteString("://")
+	// 构建ip
+	ip := net.ParseIP(address.IP)
+	if ip == nil {
+		return nil, constant.IPFormatError
+	}
+	if ip.To4() != nil {
+		// ipv4
+		builder.WriteString(ip.String())
+	} else {
+		// ipv6
+		builder.WriteRune('[')
+		builder.WriteString(ip.String())
+		builder.WriteRune(']')
+	}
+	// 构建端口
+	builder.WriteRune(':')
+	builder.WriteString(strconv.Itoa(int(address.Port)))
+	rawUrl := builder.String()
+	// TODO 打印 debug 日志
+	return url.Parse(rawUrl)
 }
