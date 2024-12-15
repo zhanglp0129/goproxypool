@@ -40,6 +40,9 @@ func doDetect() {
 	for _, address := range addresses {
 		go func() {
 			err := detect(address)
+			if errors.Is(err, constant.NoDetectWebsite) {
+				return
+			}
 			// 检测完成
 			err = Storage.FinishDetection(address.ID, err == nil)
 			if err != nil {
@@ -57,6 +60,8 @@ func detect(address pojo.ProxyAddress) error {
 	attempts := CFG.Detect.Attempts
 	// 返回的error
 	var res error
+	// 判断是否为无检测网站
+	noWebsite := true
 	for i := 0; i < attempts; i++ {
 		// 获取检测代理地址使用的网站
 		var website string
@@ -80,6 +85,7 @@ func detect(address pojo.ProxyAddress) error {
 			// TODO 打印日志
 			fmt.Printf("info: 检测代理地址 %v 使用的网站为 %s\n", address, website)
 		}
+		noWebsite = false
 
 		// 构建代理对象
 		proxyUrl, err := buildProxyUrl(address)
@@ -107,6 +113,9 @@ func detect(address pojo.ProxyAddress) error {
 			fmt.Printf("info: 使用代理 %v 访问 %s 成功，响应状态码为 %d\n", address, website, resp.StatusCode)
 			return nil
 		}
+	}
+	if noWebsite {
+		return constant.NoDetectWebsite
 	}
 	return res
 }
