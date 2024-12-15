@@ -12,6 +12,8 @@ var (
 
 // Run 在后台运行可用性检测
 func Run() {
+	// 先进行一次直连检测
+	doWebsiteDetect()
 	go runAddressDetect()
 	go runWebsiteDetect()
 }

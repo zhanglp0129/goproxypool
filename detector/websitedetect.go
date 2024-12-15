@@ -4,20 +4,17 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"slices"
 	"sync"
 	"time"
 )
 
 var (
-	availableWebsites = slices.Clone(CFG.Detect.Websites)
+	availableWebsites = make([]string, 0)
 	websitesMutex     sync.RWMutex
 )
 
 // 运行直连网站连通性检测
 func runWebsiteDetect() {
-	// 启动时就执行一次直连网站检测
-	doWebsiteDetect()
 	// 开启计时器
 	directInterval := time.Duration(CFG.Detect.DirectInterval) * time.Second
 	ticker := time.NewTicker(directInterval)
