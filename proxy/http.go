@@ -55,7 +55,7 @@ func interceptHttpProxy(req *http.Request, ctx *goproxy.ProxyCtx) (*http.Request
 			// 使用代理地址失败，执行一次检测
 			failDetect := CFG.Use.FailDetect
 			if failDetect {
-				go detector.Detect(proxyAddress)
+				go detector.Detect(proxyAddress, false)
 			}
 		} else {
 			return req, resp

@@ -237,7 +237,7 @@ func (s *Storage) FinishDetection(id int64, accept bool) error {
 	// 先获取数据，要求代理地址失效
 	var model StorageModel
 	err := s.db.Select("accept_number", "effective_time").
-		Where("id = ? and effective_time < ?", id, time.Now().UnixNano()).
+		Where("id = ?", id).
 		Take(&model).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil

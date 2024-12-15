@@ -35,12 +35,12 @@ func doDetect() {
 	}
 	// 开启goroutine，执行检测
 	for _, address := range addresses {
-		go Detect(address)
+		go Detect(address, true)
 	}
 }
 
-// Detect 检测代理地址的可用性
-func Detect(address pojo.ProxyAddress) error {
+// Detect 检测代理地址的可用性。acceptFinish通过时是否完成检测
+func Detect(address pojo.ProxyAddress, acceptFinish bool) error {
 	// 获取重试次数
 	attempts := CFG.Detect.Attempts
 	// 返回的error
@@ -97,7 +97,10 @@ func Detect(address pojo.ProxyAddress) error {
 			// TODO 记录 info 日志
 			fmt.Printf("info: 使用代理 %v 访问 %s 成功，响应状态码为 %d\n", address, website, resp.StatusCode)
 			// 检测完成
-			err = Storage.FinishDetection(address.ID, err == nil)
+			if !acceptFinish {
+				return nil
+			}
+			err = Storage.FinishDetection(address.ID, true)
 			if err != nil {
 				// TODO 记录日志
 				fmt.Printf("error: 完成代理地址 %v 检测错误 %v\n", address, err)
@@ -108,6 +111,13 @@ func Detect(address pojo.ProxyAddress) error {
 	}
 	if noWebsite {
 		return constant.NoDetectWebsite
+	}
+	// 检测完成
+	err := Storage.FinishDetection(address.ID, false)
+	if err != nil {
+		// TODO 记录日志
+		fmt.Printf("error: 完成代理地址 %v 检测错误 %v\n", address, err)
+		res = errors.Join(res, constant.FinishDetectError)
 	}
 	return res
 }
