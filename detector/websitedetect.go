@@ -35,10 +35,7 @@ func doWebsiteDetect() {
 	for _, website := range websites {
 		go func() {
 			err := websiteDetect(website)
-			if err != nil {
-				// TODO 记录 warn 日志
-				fmt.Printf("warn: 直连检测 %s 出错 %v\n", website, err)
-			} else {
+			if err == nil {
 				// 检测成功，往临时网站切片中写入当前网站
 				mtx.Lock()
 				defer mtx.Unlock()
@@ -73,8 +70,12 @@ func websiteDetect(website string) error {
 		}
 		resp, err := client.Get(website)
 		if err != nil {
+			// TODO 打印日志
+			fmt.Printf("warn: 直连检测 %s 出错 %v\n", website, err)
 			res = errors.Join(res, err)
 		} else if resp.StatusCode != 200 {
+			// TODO 打印日志
+			fmt.Printf("warn: 直连检测 %s 出错 %v\n", website, errors.New(resp.Status))
 			res = errors.Join(res, errors.New(resp.Status))
 		} else {
 			// TODO 记录 info 日志
