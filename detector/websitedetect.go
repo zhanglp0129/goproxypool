@@ -74,6 +74,8 @@ func websiteDetect(website string) error {
 		resp, err := client.Get(website)
 		if err != nil {
 			res = errors.Join(res, err)
+		} else if resp.StatusCode != 200 {
+			res = errors.Join(res, errors.New(resp.Status))
 		} else {
 			// TODO 记录 info 日志
 			fmt.Printf("info: 不使用代理访问 %s 成功，响应状态码为 %d\n", website, resp.StatusCode)

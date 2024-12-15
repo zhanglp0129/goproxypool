@@ -93,6 +93,10 @@ func Detect(address pojo.ProxyAddress, acceptFinish bool) error {
 			// TODO 记录 info 日志
 			fmt.Printf("info: 检测代理地址 %v 错误 %v\n", address, err)
 			res = errors.Join(res, err)
+		} else if resp.StatusCode != 200 {
+			// TODO 记录 info 日志
+			fmt.Printf("info: 检测代理地址 %v 错误 %s\n", address, resp.Status)
+			res = errors.Join(res, errors.Join(errors.New(resp.Status)))
 		} else {
 			// TODO 记录 info 日志
 			fmt.Printf("info: 使用代理 %v 访问 %s 成功，响应状态码为 %d\n", address, website, resp.StatusCode)
