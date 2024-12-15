@@ -57,36 +57,49 @@ func (s *Storage) InsertProxyAddress(proxyAddress pojo.ProxyAddress) error {
 
 func (s *Storage) GetAvailableProxyAddress(protocol string) (pojo.ProxyAddress, error) {
 	maxConcurrency := CFG.Use.MaxConcurrency
-	// 获取一个可用的代理地址。未超过检测生效时间，优先选择最久未使用的代理地址。
-	model := StorageModel{}
-	err := s.db.Where("protocol = ? and effective_time > ? and accept_number > 0", protocol, time.Now().UnixNano()).
-		Order("use_time").
-		Take(&model).Error
-	if errors.Is(err, gorm.ErrRecordNotFound) {
-		// 无代理地址
-		return pojo.ProxyAddress{}, constant.NoProxy
-	} else if err != nil {
-		// 其他错误
-		return pojo.ProxyAddress{}, err
-	}
+	var model StorageModel
 
-	// 加乐观锁，最多重试3次
-	var swapped bool
-	for i := 0; i < 3; i++ {
-		// 超过最大并发，也认为是无可用的代理地址
-		concurrent, _ := s.concurrency.LoadOrStore(model.ID, 1)
-		if concurrent.(int) > maxConcurrency {
-			return pojo.ProxyAddress{}, constant.NoProxy
+	err := s.db.Transaction(func(tx *gorm.DB) error {
+		// 获取一个可用的代理地址。未超过检测生效时间，优先选择最久未使用的代理地址。
+		err := s.db.Where("protocol = ? and effective_time > ? and accept_number > 0", protocol, time.Now().UnixNano()).
+			Order("use_time").
+			Take(&model).Error
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			// 无代理地址
+			return constant.NoProxy
+		} else if err != nil {
+			// 其他错误
+			return err
 		}
-		// 获取完成后，并发数+1
-		swapped = s.concurrency.CompareAndSwap(model.ID, concurrent, concurrent.(int)+1)
-		if swapped {
-			break
+
+		// 修改使用时间
+		err = s.db.Model(&model).Where("id = ?", model.ID).Update("use_time", time.Now().UnixNano()).Error
+		if err != nil {
+			return err
 		}
-	}
-	if !swapped {
-		// 多次尝试乐观锁判断都失效
-		return pojo.ProxyAddress{}, constant.NoProxy
+
+		// 加乐观锁，最多重试3次
+		var swapped bool
+		for i := 0; i < 3; i++ {
+			// 超过最大并发，也认为是无可用的代理地址
+			concurrent, _ := s.concurrency.LoadOrStore(model.ID, 1)
+			if concurrent.(int) > maxConcurrency {
+				return constant.NoProxy
+			}
+			// 获取完成后，并发数+1
+			swapped = s.concurrency.CompareAndSwap(model.ID, concurrent, concurrent.(int)+1)
+			if swapped {
+				break
+			}
+		}
+		if !swapped {
+			// 多次尝试乐观锁判断都失效
+			return constant.NoProxy
+		}
+		return nil
+	})
+	if err != nil {
+		return pojo.ProxyAddress{}, err
 	}
 
 	// 构造并返回结果
@@ -278,20 +291,12 @@ func (s *Storage) FinishUse(id int64, success bool) error {
 			} else if err != nil {
 				return err
 			}
-			// 将使用时间改为当前时间
-			model.UseTime = time.Now().UnixNano()
 			// 需要修改生效时间，不修改通过次数
 			model.EffectiveTime = effective(model.AcceptNumber)
 			// 修改数据
-			err = s.db.Select("use_time", "effective_time").
+			err = s.db.Select("effective_time").
 				Where("id = ? and accept_number > 0", id).
 				Updates(&model).Error
-			if err != nil {
-				return err
-			}
-		} else {
-			// 仅修改使用时间即可
-			err := s.db.Where("id = ?", id).Update("use_time", time.Now().UnixNano()).Error
 			if err != nil {
 				return err
 			}

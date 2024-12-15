@@ -2,10 +2,11 @@ package main
 
 import (
 	"github.com/zhanglp0129/goproxypool/detector"
-	_ "github.com/zhanglp0129/goproxypool/storage"
+	"github.com/zhanglp0129/goproxypool/proxy"
 )
 
 func main() {
 	detector.Run()
+	proxy.Run()
 	select {}
 }

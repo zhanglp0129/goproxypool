@@ -5,12 +5,9 @@ import (
 	"fmt"
 	"github.com/zhanglp0129/goproxypool/common/constant"
 	"github.com/zhanglp0129/goproxypool/common/pojo"
+	"github.com/zhanglp0129/goproxypool/utils"
 	"math/rand"
-	"net"
 	"net/http"
-	"net/url"
-	"strconv"
-	"strings"
 	"time"
 )
 
@@ -38,24 +35,12 @@ func doDetect() {
 	}
 	// 开启goroutine，执行检测
 	for _, address := range addresses {
-		go func() {
-			err := detect(address)
-			if errors.Is(err, constant.NoDetectWebsite) {
-				return
-			}
-			// 检测完成
-			err = Storage.FinishDetection(address.ID, err == nil)
-			if err != nil {
-				// TODO 记录日志
-				fmt.Printf("error: 完成代理地址 %v 检测错误 %v\n", address, err)
-				return
-			}
-		}()
+		go Detect(address)
 	}
 }
 
-// 检测代理地址的可用性
-func detect(address pojo.ProxyAddress) error {
+// Detect 检测代理地址的可用性
+func Detect(address pojo.ProxyAddress) error {
 	// 获取重试次数
 	attempts := CFG.Detect.Attempts
 	// 返回的error
@@ -70,7 +55,7 @@ func detect(address pojo.ProxyAddress) error {
 			defer websitesMutex.RUnlock()
 			if len(availableWebsites) == 0 {
 				// TODO 记录日志
-				fmt.Printf("error: 无可用的检测网站\n")
+				fmt.Printf("warn: 无可用的检测网站\n")
 				return constant.NoDetectWebsite
 			}
 			website = availableWebsites[rand.Intn(len(availableWebsites))]
@@ -88,7 +73,7 @@ func detect(address pojo.ProxyAddress) error {
 		noWebsite = false
 
 		// 构建代理对象
-		proxyUrl, err := buildProxyUrl(address)
+		proxyUrl, err := utils.BuildProxyUrl(address)
 		if err != nil {
 			// TODO 记录日志
 			fmt.Printf("error: 构建代理对象错误，代理地址为 %v\n", address)
@@ -111,6 +96,13 @@ func detect(address pojo.ProxyAddress) error {
 		} else {
 			// TODO 记录 info 日志
 			fmt.Printf("info: 使用代理 %v 访问 %s 成功，响应状态码为 %d\n", address, website, resp.StatusCode)
+			// 检测完成
+			err = Storage.FinishDetection(address.ID, err == nil)
+			if err != nil {
+				// TODO 记录日志
+				fmt.Printf("error: 完成代理地址 %v 检测错误 %v\n", address, err)
+				return constant.FinishDetectError
+			}
 			return nil
 		}
 	}
@@ -118,33 +110,4 @@ func detect(address pojo.ProxyAddress) error {
 		return constant.NoDetectWebsite
 	}
 	return res
-}
-
-// 构建代理url
-func buildProxyUrl(address pojo.ProxyAddress) (*url.URL, error) {
-	builder := strings.Builder{}
-	// 构建协议
-	builder.WriteString(address.Protocol)
-	builder.WriteString("://")
-	// 构建ip
-	ip := net.ParseIP(address.IP)
-	if ip == nil {
-		return nil, constant.IPFormatError
-	}
-	if ip.To4() != nil {
-		// ipv4
-		builder.WriteString(ip.String())
-	} else {
-		// ipv6
-		builder.WriteRune('[')
-		builder.WriteString(ip.String())
-		builder.WriteRune(']')
-	}
-	// 构建端口
-	builder.WriteRune(':')
-	builder.WriteString(strconv.Itoa(int(address.Port)))
-	rawUrl := builder.String()
-	// TODO 打印 debug 日志
-	fmt.Printf("debug: 代理url为 %s\n", rawUrl)
-	return url.Parse(rawUrl)
 }

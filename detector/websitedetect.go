@@ -49,7 +49,7 @@ func doWebsiteDetect() {
 	}
 	wait.Wait()
 	// 直连检测完成
-	fmt.Printf("info: 直连检测完成，可用的检测网站 %v", tempWebsites)
+	fmt.Printf("info: 直连检测完成，可用的检测网站 %v\n", tempWebsites)
 	// 将临时网站的数据写入可用的网站切片
 	func() {
 		websitesMutex.Lock()

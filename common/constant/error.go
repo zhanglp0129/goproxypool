@@ -16,4 +16,6 @@ const (
 	IPFormatError GoproxypoolError = "ip address format error"
 	// NoDetectWebsite 无检测代理地址使用的网站
 	NoDetectWebsite GoproxypoolError = "no detect website error"
+	// FinishDetectError 完成代理地址检测错误
+	FinishDetectError GoproxypoolError = "finish detect address error"
 )

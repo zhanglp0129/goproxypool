@@ -8,7 +8,7 @@ type StorageModel struct {
 	Port          uint16 `gorm:"uniqueIndex:idx_address,priority:3;not null;comment:端口"`
 	AcceptNumber  int    `gorm:"default:0;not null;comment:检测通过次数，负数表示失败次数"`
 	EffectiveTime int64  `gorm:"default:0;not null;index;comment:检测生效时间，以完成检测为准，为纳秒级Unix时间戳"`
-	UseTime       int64  `gorm:"default:0;not null;index;comment:上次使用时间，以完成使用为准，为纳秒级Unix时间戳"`
+	UseTime       int64  `gorm:"default:0;not null;index;comment:上次使用时间，以开始使用为准，为纳秒级Unix时间戳"`
 }
 
 // TableName 自定义表名
