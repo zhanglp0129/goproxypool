@@ -17,6 +17,7 @@ func runHttp() {
 	proxy := goproxy.NewProxyHttpServer()
 	// TODO 修改调试日志
 	proxy.Verbose = true
+	proxy.OnRequest().HandleConnect(goproxy.AlwaysMitm)
 	proxy.OnRequest().DoFunc(interceptHttpProxy)
 	address := fmt.Sprintf("%s:%d", CFG.Proxy.Http.IP, CFG.Proxy.Http.Port)
 	// TODO 打印 debug 日志
@@ -95,14 +96,14 @@ func useHttpProxyAddress(req *http.Request, proxyAddress pojo.ProxyAddress) (*ht
 		} else {
 			// TODO 记录日志
 			fmt.Printf("info: 使用代理 %v 成功，响应状态码为 %d\n", proxyAddress, resp.StatusCode)
-			err = Storage.FinishDetection(proxyAddress.ID, true)
+			err = Storage.FinishUse(proxyAddress.ID, true)
 			if err != nil {
 				return nil, err
 			}
 			return resp, nil
 		}
 	}
-	err := Storage.FinishDetection(proxyAddress.ID, false)
+	err := Storage.FinishUse(proxyAddress.ID, false)
 	if err != nil {
 		return nil, err
 	}
