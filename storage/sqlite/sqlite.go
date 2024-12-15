@@ -242,7 +242,7 @@ func (s *Storage) FinishDetection(id int64, accept bool) error {
 	} else {
 		// 未通过检测
 		if model.AcceptNumber < 0 {
-			model.AcceptNumber++
+			model.AcceptNumber--
 		} else {
 			model.AcceptNumber = -1
 		}
