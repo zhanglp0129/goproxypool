@@ -43,9 +43,8 @@ type ProxyConfig struct {
 
 // HttpProxyConfig http代理相关配置
 type HttpProxyConfig struct {
-	IP      string
-	Port    uint16
-	NoProxy string `yaml:"no_proxy"`
+	IP   string
+	Port uint16
 }
 
 // PanelConfig 管理面板相关配置
@@ -74,8 +73,9 @@ type UseConfig struct {
 	Timeout        int
 	Attempts       int
 	Addresses      int
-	MaxConcurrency int `yaml:"max_concurrency"`
-	NOProxyWaiting int `yaml:"no_proxy_waiting"`
+	MaxConcurrency int    `yaml:"max_concurrency"`
+	NoProxyWaiting int    `yaml:"no_proxy_waiting"`
+	NoProxy        string `yaml:"no_proxy"`
 }
 
 // StorageConfig 持久化存储相关配置

@@ -6,8 +6,6 @@ proxy:
     ip: 0.0.0.0
     # 代理服务器监听端口
     port: 12716
-    # 无可用代理时执行的策略。error表示返回异常，direct表示直连
-    no_proxy: error
 
 # 管理面板相关配置
 panel:
@@ -64,6 +62,8 @@ use:
   max_concurrency: 20
   # 无代理地址等待时间，单位为秒
   no_proxy_waiting: 1
+  # 无可用代理时执行的策略。error表示返回异常，direct表示直连
+  no_proxy: error
 
 # 持久化存储相关配置
 storage:
